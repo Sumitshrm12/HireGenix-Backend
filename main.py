@@ -127,7 +127,7 @@ from typing import List, Optional
 from uuid import uuid4
 from datetime import datetime
 from contextlib import asynccontextmanager
-from ultralytics import YOLO
+# YOLO import is lazy-loaded to prevent startup issues
 
 # Load .env manually if decouple fails (optional fallback)
 load_dotenv()
@@ -2224,12 +2224,35 @@ face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_fronta
 # FaceMesh is now lazy-loaded via _get_face_mesh() function
 # This avoids MediaPipe initialization errors at startup
 
-# Initialize YOLO model
-model = YOLO("yolov8n.pt")  # You can also use yolov8s or yolov8m
+# Lazy YOLO model initialization
+_yolo_model = None
+_yolo_init_attempted = False
+
+def _get_yolo_model():
+    """Lazy load YOLO model with proper error handling"""
+    global _yolo_model, _yolo_init_attempted
+    if _yolo_model is not None:
+        return _yolo_model
+    if _yolo_init_attempted:
+        return None
+    _yolo_init_attempted = True
+    try:
+        print("🔄 Loading YOLO model...")
+        from ultralytics import YOLO
+        _yolo_model = YOLO("yolov8n.pt")
+        print("✅ YOLO model loaded successfully")
+        return _yolo_model
+    except Exception as e:
+        print(f"⚠️ YOLO model unavailable: {e}")
+        return None
 
 def detect_smartphone(frame):
     """Detect smartphones using YOLO model"""
     try:
+        model = _get_yolo_model()
+        if model is None:
+            print("⚠️ YOLO model not available, skipping phone detection")
+            return False, None
         results = model(frame)[0]
         phone_detections = []
 
