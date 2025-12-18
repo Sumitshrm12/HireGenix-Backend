@@ -1,9 +1,10 @@
 # main.py
+print("🚀 [STARTUP] HireGenix Backend is initializing...")
 # Suppress urllib3 LibreSSL warning before any imports
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="urllib3")
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, WebSocket, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from resume_processor import extract_text, analyze_and_extract
 from job_generator import JobDescriptionParams, generate_job_description
@@ -2209,9 +2210,17 @@ async def get_contacts(user_id: str):
         raise HTTPException(status_code=500, detail=f"Error fetching contacts: {str(e)}")
 @app.on_event("startup")
 async def startup_event():
+    print("🚀 [STARTUP] Running startup tasks...")
     # Setup database on startup
-    if not setup_database():
-        print("Warning: Database setup failed")
+    try:
+        if not setup_database():
+            print("⚠️ [STARTUP] Warning: Database setup returned False")
+        else:
+            print("✅ [STARTUP] Database setup successful")
+    except Exception as e:
+        print(f"❌ [STARTUP] Critical error in setup_database: {e}")
+    
+    print(f"✅ [STARTUP] Backend is ready to serve on port: {os.getenv('PORT', '8000')}")
 
 
 
